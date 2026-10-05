@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environment
+.venv/
+venv/
+
+# Secrets and local settings
+.env
+.streamlit/secrets.toml
+
+# Generated data - recreated by running the ETL
+data/raw/*
+data/processed/*
+data/quality/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/quality/.gitkeep
+*.db
+logs/
+
+# Editors and OS files
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
