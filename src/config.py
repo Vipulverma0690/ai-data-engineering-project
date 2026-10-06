@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 RAW_DIR = ROOT_DIR / "data" / "raw"
 PROCESSED_DIR = ROOT_DIR / "data" / "processed"
+QUALITY_DIR = ROOT_DIR / "data" / "quality"
 
 # ---------- Scope ----------
 START_DATE = "2024-10-01"
