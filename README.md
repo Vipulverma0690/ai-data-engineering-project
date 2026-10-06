@@ -65,7 +65,7 @@ The dashboard opens at <http://localhost:8501>. Stop it with **Ctrl+C**.
 - **Poor air drives 85% of risk-days** (1,425 of 1,672). Delhi alone accounts for 41% of poor-air days (591 days, 81% of its days).
 - **Heat is concentrated in the west and north:** Ahmedabad has 47% of all heat days (106), followed by Delhi (60) and Jaipur (52). Bengaluru and Mumbai have none.
 - **Risk peaks in winter** (35% of city-days) because of smog, and is lowest in the monsoon (15%), when rain clears the air.
-- **With "Poor air" unticked**, weather-only disruption falls to roughly 4% of city-days and heat becomes the main driver. The headline number is therefore mostly an air-quality story, which is why the dashboard lets planners choose which risks count.
+- **With "Poor air" unticked**, weather-only disruption falls to **4.2% of city-days** (247 days), heat becomes the main driver (91% of weather risk-days) and Ahmedabad becomes the most exposed city. The headline number is therefore mostly an air-quality story, which is why the dashboard lets planners choose which risks count.
 
 ---
 
@@ -111,7 +111,7 @@ flowchart LR
 │   ├── raw/                # API snapshot (JSON) – committed for reproducibility
 │   ├── processed/          # Parquet tables – rebuilt by etl.py
 │   └── quality/            # dq_report.csv
-├── docs/                   # data model diagram and specification
+├── docs/                   # data model diagram
 └── ai_transcript/          # full AI conversation
 ```
 
@@ -194,7 +194,7 @@ Charts use a colour-blind-safe palette with one fixed colour per risk type in bo
 
 ## 7. Assumptions and known limitations
 
-1. **Heavy rain is under-counted.** Open-Meteo's historical weather is reanalysis model output on a grid roughly 10–25 km wide. Averaging over a grid cell smooths out local cloudbursts, so the gauge-based IMD threshold of 64.5 mm triggers far less often than at a real rain gauge. I kept 64.5 mm as the default because it is the official, defensible definition, and added a slider so users can test lower values.
+1. **Heavy rain is under-counted.** Open-Meteo's historical weather is reanalysis model output on a grid roughly 10–25 km wide. Averaging over a grid cell smooths out local cloudbursts, so the gauge-based IMD threshold of 64.5 mm triggers far less often than at a real rain gauge. I kept 64.5 mm as the default because it is the official, defensible definition, and added a slider so users can test lower values. In this dataset the wettest single day is only 137 mm in Mumbai and 57 mm in Kolkata, well below what city rain gauges record in a typical monsoon.
 2. **Model data, not ground stations.** Air quality comes from the CAMS model, not CPCB monitoring stations.
 3. **One coordinate per city.** Conditions vary across large cities.
 4. **Simplified heat rule.** IMD also uses departure from normal temperature; a fixed 40 °C is used here.
