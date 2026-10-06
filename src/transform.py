@@ -202,12 +202,17 @@ def _flag(condition: pd.Series, known: pd.Series) -> pd.Series:
     return flag
 
 
-def add_risk_flags(df: pd.DataFrame) -> pd.DataFrame:
+def add_risk_flags(df: pd.DataFrame,
+                   heat_c: float = config.HEAT_DAY_TEMP_MAX_C,
+                   rain_mm: float = config.HEAVY_RAIN_MM,
+                   pm25_limit: float = config.PM25_LIMIT_UGM3,
+                   pm10_limit: float = config.PM10_LIMIT_UGM3) -> pd.DataFrame:
+    """Add the risk flags. Thresholds default to config, but the dashboard can pass its own
+    (slider values) so the ETL and the app always share one definition of each flag."""
     df = df.copy()
-    df["is_heat_day"] = _flag(df["temp_max"] >= config.HEAT_DAY_TEMP_MAX_C, df["temp_max"].notna())
-    df["is_heavy_rain_day"] = _flag(df["precipitation_mm"] >= config.HEAVY_RAIN_MM,
-                                    df["precipitation_mm"].notna())
-    poor_air = (df["pm25_mean"] > config.PM25_LIMIT_UGM3) | (df["pm10_mean"] > config.PM10_LIMIT_UGM3)
+    df["is_heat_day"] = _flag(df["temp_max"] >= heat_c, df["temp_max"].notna())
+    df["is_heavy_rain_day"] = _flag(df["precipitation_mm"] >= rain_mm, df["precipitation_mm"].notna())
+    poor_air = (df["pm25_mean"] > pm25_limit) | (df["pm10_mean"] > pm10_limit)
     df["is_poor_air_day"] = _flag(poor_air, df["has_air_quality"])
     df["is_disruption_day"] = (
         df["is_heat_day"].fillna(False)
