@@ -79,6 +79,11 @@ with st.sidebar:
     chosen = st.multiselect("Cities", region_cities, default=region_cities)
     months = st.select_slider("Period", options=all_months, value=(all_months[0], all_months[-1]))
 
+    st.header("Risks included")
+    st.caption("Which risks count as a 'disruption day'. Untick Poor air to see weather-only disruption.")
+    include = tuple(col for col, label in analytics.RISKS.items()
+                    if st.checkbox(label, value=True, key=f"inc_{col}"))
+
     st.header("Risk thresholds")
     st.caption("Defaults are the official definitions. Adjust to test sensitivity.")
     heat_c = st.slider("Heat day: max temp ≥ (°C)", 35.0, 46.0, config.HEAT_DAY_TEMP_MAX_C, 0.5,
@@ -94,9 +99,14 @@ with st.sidebar:
 if not chosen:
     st.warning("Select at least one city in the sidebar.")
     st.stop()
+if not include:
+    st.warning("Tick at least one risk under 'Risks included' in the sidebar.")
+    st.stop()
+SHOWN = [analytics.RISKS[c] for c in include]  # risk labels to draw, in fixed order
 
 ids = [city_id_by_name[c] for c in chosen]
-df = analytics.apply_filters_and_thresholds(fact, dim_date, ids, months, heat_c, rain_mm, pm25, pm10)
+df = analytics.apply_filters_and_thresholds(fact, dim_date, ids, months, heat_c, rain_mm, pm25, pm10,
+                                            include)
 monthly = analytics.monthly(df, dim_city, dim_date)
 k = analytics.kpis(df, dim_city)
 
@@ -104,7 +114,7 @@ k = analytics.kpis(df, dim_city)
 # Header + KPIs
 # ---------------------------------------------------------------------------
 st.title("🌦️ City Operations Risk Monitor")
-st.caption(f"Weather and air-quality disruption risk across {len(ids)} Indian cities · "
+st.caption(f"Disruption risk ({', '.join(SHOWN).lower()}) across {len(ids)} Indian cities · "
            f"{months[0]} to {months[1]} · Source: Open-Meteo (historical weather + CAMS air quality)")
 
 c1, c2, c3, c4, c5 = st.columns(5)
@@ -112,7 +122,8 @@ c1.metric("Disruption days", f"{k['disruption_days']:,}", help="City-days with a
 c2.metric("Disruption rate", f"{k['disruption_rate']:.0%}", help="Disruption days / city-days observed")
 c3.metric("Most exposed city", k["worst_city"],
           help=f"Highest disruption rate in the selection: {k['worst_city_rate']:.0%} of its days")
-risk_days = {"Heat": k["heat_days"], "Heavy rain": k["rain_days"], "Poor air": k["air_days"]}
+risk_days = {r: n for r, n in {"Heat": k["heat_days"], "Heavy rain": k["rain_days"],
+                               "Poor air": k["air_days"]}.items() if r in SHOWN}
 top_risk = max(risk_days, key=risk_days.get)
 c4.metric("Main risk driver", top_risk,
           help="Risk-days by type: " + " · ".join(f"{r} {n:,}" for r, n in risk_days.items())
@@ -128,7 +139,7 @@ tab_overview, tab_trends, tab_city, tab_dq, tab_data = st.tabs(
 # ---------------------------------------------------------------------------
 with tab_overview:
     st.subheader("Key insights")
-    for line in analytics.insights(df, dim_city):
+    for line in analytics.insights(df, dim_city, include):
         st.markdown(f"- {line}")
 
     left, right = st.columns([3, 2])
@@ -149,9 +160,9 @@ with tab_overview:
         per_city = (df.groupby("city_id")[list(analytics.RISKS)]
                     .agg(lambda s: int(s.fillna(False).sum()))
                     .rename(columns=analytics.RISKS, index=city_name))
-        per_city = per_city.loc[per_city.sum(axis=1).sort_values().index]
+        per_city = per_city.loc[per_city[SHOWN].sum(axis=1).sort_values().index]
         fig = go.Figure()
-        for risk in ["Heat", "Heavy rain", "Poor air"]:
+        for risk in SHOWN:
             fig.add_bar(y=per_city.index, x=per_city[risk], name=risk, orientation="h",
                         marker=dict(color=RISK_COLORS[risk], line=dict(color=SURFACE, width=2)),
                         hovertemplate=f"<b>%{{y}}</b><br>{risk}: %{{x:,}} days<extra></extra>")
@@ -167,7 +178,7 @@ with tab_trends:
     trend = (df.groupby("year_month")[list(analytics.RISKS)]
              .agg(lambda s: int(s.fillna(False).sum())).rename(columns=analytics.RISKS))
     fig = go.Figure()
-    for risk in ["Heat", "Heavy rain", "Poor air"]:
+    for risk in SHOWN:
         fig.add_scatter(x=trend.index, y=trend[risk], name=risk, mode="lines+markers",
                         line=dict(color=RISK_COLORS[risk], width=2), marker=dict(size=8),
                         hovertemplate=f"{risk}: %{{y:,}} days<extra></extra>")
@@ -180,7 +191,7 @@ with tab_trends:
             .agg(lambda s: s.fillna(False).mean() * 100).rename(columns=analytics.RISKS)
             .reindex(season_order))
     fig = go.Figure()
-    for risk in ["Heat", "Heavy rain", "Poor air"]:
+    for risk in SHOWN:
         fig.add_bar(x=seas.index, y=seas[risk], name=risk,
                     marker=dict(color=RISK_COLORS[risk], line=dict(color=SURFACE, width=2)),
                     hovertemplate=f"%{{x}}<br>{risk}: %{{y:.1f}}% of city-days<extra></extra>")

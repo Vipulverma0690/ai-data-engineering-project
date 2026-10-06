@@ -55,3 +55,12 @@ def test_insights_are_generated_and_handle_empty_selection():
                                                 40, 64.5, 60, 100)
     assert len(analytics.insights(df, dim_city)) >= 2
     assert analytics.insights(df.iloc[0:0], dim_city) == ["No data for the current selection."]
+
+
+def test_excluding_a_risk_removes_it_from_disruption_but_keeps_the_flag():
+    dim_city, dim_date, fact = small_fact()          # day 1 heat, day 2 heavy rain
+    months = ("2024-10", "2024-10")
+    weather_only = analytics.apply_filters_and_thresholds(
+        fact, dim_date, ["DEL"], months, 40, 64.5, 60, 100, include=("is_heat_day",))
+    assert int(weather_only["is_disruption_day"].sum()) == 1      # only the heat day counts
+    assert int(weather_only["is_heavy_rain_day"].sum()) == 1      # rain flag still computed

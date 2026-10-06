@@ -17,11 +17,12 @@ RISKS = {  # flag column -> label used in the dashboard
 
 def apply_filters_and_thresholds(fact: pd.DataFrame, dim_date: pd.DataFrame, cities: list[str],
                                  months: tuple[str, str], heat_c: float, rain_mm: float,
-                                 pm25_limit: float, pm10_limit: float) -> pd.DataFrame:
-    """Filter the daily fact and recompute flags with the user's thresholds."""
+                                 pm25_limit: float, pm10_limit: float,
+                                 include: tuple[str, ...] = tuple(RISKS)) -> pd.DataFrame:
+    """Filter the daily fact and recompute flags with the user's thresholds and chosen risks."""
     df = fact.merge(dim_date[["date", "year_month", "month_name", "season", "year"]], on="date", how="left")
     df = df[df["city_id"].isin(cities) & df["year_month"].between(*months)]
-    return transform.add_risk_flags(df, heat_c, rain_mm, pm25_limit, pm10_limit)
+    return transform.add_risk_flags(df, heat_c, rain_mm, pm25_limit, pm10_limit, include)
 
 
 def monthly(df: pd.DataFrame, dim_city: pd.DataFrame, dim_date: pd.DataFrame) -> pd.DataFrame:
@@ -51,7 +52,8 @@ def kpis(df: pd.DataFrame, dim_city: pd.DataFrame) -> dict:
     }
 
 
-def insights(df: pd.DataFrame, dim_city: pd.DataFrame) -> list[str]:
+def insights(df: pd.DataFrame, dim_city: pd.DataFrame,
+             include: tuple[str, ...] = tuple(RISKS)) -> list[str]:
     """A few data-driven sentences for a business reader. Every number is computed, never hard-coded."""
     out: list[str] = []
     if df.empty or not df["has_weather"].any():
@@ -59,15 +61,16 @@ def insights(df: pd.DataFrame, dim_city: pd.DataFrame) -> list[str]:
     names = dim_city.set_index("city_id")["city"]
 
     # 1. Which risk drives disruption?
-    counts = {label: int(df[col].fillna(False).sum()) for col, label in RISKS.items()}
+    risks = {col: label for col, label in RISKS.items() if col in include}
+    counts = {label: int(df[col].fillna(False).sum()) for col, label in risks.items()}
     top_risk = max(counts, key=counts.get)
     total_flags = sum(counts.values())
-    if total_flags:
+    if total_flags and len(counts) > 1:
         out.append(f"**{top_risk}** is the main driver: {counts[top_risk]:,} of {total_flags:,} "
                    f"risk-days ({counts[top_risk] / total_flags:.0%}) in the selection.")
 
     # 2. Most exposed city for each risk
-    for col, label in RISKS.items():
+    for col, label in risks.items():
         per_city = df.groupby("city_id")[col].apply(lambda s: int(s.fillna(False).sum()))
         if per_city.max() > 0:
             cid = per_city.idxmax()
