@@ -1,0 +1,18 @@
+run_id,check_id,table_name,check_name,check_type,severity,status,rows_checked,rows_affected,details
+20261006T041123Z,DQ_SRC_01,raw,Raw file present and readable for every city x source,availability,ERROR,PASS,16,0,
+20261006T041123Z,DQ_WX_01,weather (raw),Duplicate city-date rows,uniqueness,WARN,PASS,5840,0,
+20261006T041123Z,DQ_WX_02,weather (raw),Missing days in expected date range,completeness,WARN,PASS,5840,0,
+20261006T041123Z,DQ_WX_03,weather (raw),Null values in weather measures,completeness,WARN,PASS,5840,0,
+20261006T041123Z,DQ_WX_04,weather (raw),Values outside plausible range,validity,WARN,PASS,5840,0,
+20261006T041123Z,DQ_WX_05,weather (raw),temp_min <= temp_mean <= temp_max,consistency,WARN,PASS,5840,0,
+20261006T041123Z,DQ_AQ_01,air_quality (raw hourly),Duplicate city-hour rows,uniqueness,WARN,PASS,140160,0,
+20261006T041123Z,DQ_AQ_02,air_quality (raw hourly),Null PM2.5 / PM10 readings,completeness,WARN,PASS,140160,0,
+20261006T041123Z,DQ_AQ_03,air_quality (raw hourly),Readings outside plausible range,validity,WARN,PASS,140160,0,
+20261006T041123Z,DQ_AQ_04,air_quality (raw hourly),PM2.5 <= PM10 (PM2.5 is a subset of PM10),consistency,WARN,PASS,140160,0,
+20261006T041123Z,DQ_AQ_05,fact_air_quality_daily,Days with < 18 valid hours (excluded from air metrics),completeness,WARN,PASS,5840,0,
+20261006T041123Z,DQ_FC_01,fact_city_daily,"Primary key (city_id, date) is unique",uniqueness,ERROR,PASS,5840,0,
+20261006T041123Z,DQ_FC_02,fact_city_daily,Every city_id exists in dim_city,referential integrity,ERROR,PASS,5840,0,
+20261006T041123Z,DQ_FC_03,fact_city_daily,Every date exists in dim_date,referential integrity,ERROR,PASS,5840,0,
+20261006T041123Z,DQ_FC_04,fact_city_daily,Row count = cities x days,completeness,ERROR,PASS,5840,0,"expected 5840, got 5840"
+20261006T041123Z,DQ_FC_05,fact_city_daily,Days missing one or both sources,join coverage,WARN,PASS,5840,0,"weather only: 0, air quality only: 0, neither: 0"
+20261006T041123Z,DQ_MART_01,mart_city_month,Monthly totals reconcile to daily fact,consistency,ERROR,PASS,4,0,

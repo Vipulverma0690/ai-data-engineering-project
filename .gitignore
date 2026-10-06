@@ -11,13 +11,12 @@ venv/
 .env
 .streamlit/secrets.toml
 
-# Generated data - recreated by running the ETL
-data/raw/*
+# Generated data
+# - data/raw/ IS committed: pinned API snapshot so the project runs even if the API is down
+# - data/processed/ is rebuilt by `python etl.py` in ~1 second
 data/processed/*
-data/quality/*
-!data/raw/.gitkeep
 !data/processed/.gitkeep
-!data/quality/.gitkeep
+data/raw/_extract_manifest.json
 *.db
 logs/
 
